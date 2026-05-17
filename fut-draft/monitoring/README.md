@@ -1,12 +1,12 @@
 # Monitoring
 
-Prometheus scrapes backend metrics from:
+Prometheus scrapes backend metrics from the deployed API:
 
 ```text
-http://localhost:3001/api/metrics
+https://squaddraft.ru/api/metrics
 ```
 
-Start the backend first, then run monitoring:
+For local-only testing, start the backend first, then run monitoring:
 
 ```bash
 docker compose -f docker-compose.monitoring.yml up
@@ -16,10 +16,23 @@ Local URLs:
 
 ```text
 Prometheus: http://localhost:9090
-Grafana:    http://localhost:3002
+Grafana:    http://localhost:3000
 ```
 
-Grafana default login is usually `admin` / `admin`.
+Grafana admin login is configured as `admin` / `admin` for the project demo.
+Anonymous viewing is enabled, so dashboards can be opened without logging in.
+
+## Dokploy URLs
+
+Recommended public routes:
+
+```text
+Prometheus: https://prometheus.squaddraft.ru -> service prometheus, port 9090
+Grafana:    https://grafana.squaddraft.ru    -> service grafana, port 3000
+```
+
+In Dokploy, add these domains in the Docker Compose service Domains tab after
+the first compose deploy. Enable HTTPS and use Let's Encrypt for both.
 
 ## What We Collect
 
