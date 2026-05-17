@@ -8,6 +8,32 @@ The container serves:
 - player images from `/player-images`
 - Prometheus metrics from `/api/metrics`
 
+## Recommended Dokploy setup
+
+Use **Application** with the root `Dockerfile`, not the current `docker-compose.yml`.
+The current compose file is only for local Postgres/Redis and does not define the app service.
+
+For the GitHub repository `Chiryusha/projectT`, the app is inside `fut-draft`, but the production `Dockerfile` is in the repository root and already points to the correct subfolders.
+
+Dokploy build settings:
+
+```text
+Build type: Dockerfile
+Dockerfile Path: Dockerfile
+Docker Context Path: .
+Container port for domain routing: 3001
+```
+
+Domain settings:
+
+```text
+Host: squaddraft.ru
+Path: /
+Container Port: 3001
+HTTPS: ON
+Certificate: Let's Encrypt
+```
+
 ## Dokploy variables
 
 Set these environment variables in Dokploy:

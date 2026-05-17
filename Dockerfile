@@ -3,10 +3,10 @@
 FROM node:22-alpine AS frontend-builder
 WORKDIR /app/frontend
 
-COPY frontend/package*.json ./
+COPY fut-draft/frontend/package*.json ./
 RUN npm ci
 
-COPY frontend/ ./
+COPY fut-draft/frontend/ ./
 ARG VITE_API_BASE_URL=/api
 ARG VITE_ANALYTICS_ENABLED=true
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
@@ -17,10 +17,10 @@ FROM node:22-alpine AS backend-builder
 RUN apk add --no-cache openssl libc6-compat ca-certificates
 WORKDIR /app/backend
 
-COPY backend/package*.json ./
+COPY fut-draft/backend/package*.json ./
 RUN npm ci
 
-COPY backend/ ./
+COPY fut-draft/backend/ ./
 RUN npx prisma generate
 RUN npm run build
 
@@ -39,7 +39,7 @@ COPY --from=backend-builder /app/backend/dist ./dist
 COPY --from=backend-builder /app/backend/prisma ./prisma
 COPY --from=backend-builder /app/backend/public ./public
 COPY --from=frontend-builder /app/frontend/dist ./public/app
-COPY backend/scripts/docker-entrypoint.sh ./docker-entrypoint.sh
+COPY fut-draft/backend/scripts/docker-entrypoint.sh ./docker-entrypoint.sh
 
 RUN chmod +x ./docker-entrypoint.sh && mkdir -p /app/public/player-images
 
