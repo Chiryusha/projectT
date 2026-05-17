@@ -34,6 +34,10 @@ Grafana:    https://grafana.squaddraft.ru    -> service grafana, port 3000
 In Dokploy, add these domains in the Docker Compose service Domains tab after
 the first compose deploy. Enable HTTPS and use Let's Encrypt for both.
 
+The compose file builds small Prometheus/Grafana images with configs and
+dashboards copied into the images. Runtime volumes are used only for persisted
+Prometheus and Grafana data.
+
 ## What We Collect
 
 Backend HTTP:

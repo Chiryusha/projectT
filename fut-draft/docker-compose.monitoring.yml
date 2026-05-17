@@ -1,6 +1,9 @@
 services:
   prometheus:
-    image: prom/prometheus:latest
+    build:
+      context: ./monitoring
+      dockerfile: prometheus.Dockerfile
+    image: fut-draft-prometheus:latest
     restart: unless-stopped
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
@@ -9,12 +12,13 @@ services:
     ports:
       - "9090"
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
       - prometheus-data:/prometheus
 
   grafana:
-    image: grafana/grafana:latest
+    build:
+      context: ./monitoring
+      dockerfile: grafana.Dockerfile
+    image: fut-draft-grafana:latest
     restart: unless-stopped
     depends_on:
       - prometheus
@@ -26,12 +30,10 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
       GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/fut-draft-overview.json
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/fut-draft-overview.json
     ports:
       - "3000"
     volumes:
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana-data:/var/lib/grafana
 
 volumes:
