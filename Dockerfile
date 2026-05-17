@@ -14,6 +14,7 @@ ENV VITE_ANALYTICS_ENABLED=$VITE_ANALYTICS_ENABLED
 RUN npm run build
 
 FROM node:22-alpine AS backend-builder
+RUN apk add --no-cache openssl libc6-compat ca-certificates
 WORKDIR /app/backend
 
 COPY backend/package*.json ./
@@ -24,6 +25,7 @@ RUN npx prisma generate
 RUN npm run build
 
 FROM node:22-alpine AS production
+RUN apk add --no-cache openssl libc6-compat ca-certificates
 WORKDIR /app
 
 ENV NODE_ENV=production
