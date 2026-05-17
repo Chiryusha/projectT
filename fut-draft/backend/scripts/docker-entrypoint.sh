@@ -6,7 +6,7 @@ if [ "${SKIP_PRISMA_MIGRATE:-false}" != "true" ]; then
 fi
 
 if [ "${RUN_DB_SEED:-false}" = "true" ]; then
-  npm run prisma:seed
+  node dist/prisma/seed.js
 fi
 
 exec node dist/src/main.js
