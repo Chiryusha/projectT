@@ -1,0 +1,192 @@
+/*
+  @id - primary key (первичный ключ в таблице, не может повторяться)
+  @default(uuid()) - поле создается само
+  @unique - уникальный индекс на одно поле, нельзя создать двух пользователей с одинаковым email или nickname.
+  @updatedAt - поле автоматически обновляется каждый раз, когда запись изменяется.
+  onDelete: Cascade -  удалить родительскую запись, дочерние удалятся автоматически.
+  @@unique - то же самое, но на комбинацию полей
+  @@index([...]) - для ускорения запросов
+  fields: [...] - поле хранения связи
+  references: [id] - поле из fields хранит ссылку на это поле
+  onDelete: Restrict - нельзя удалить если на нее кто-то ссылается
+
+*/
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DraftSessionStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+enum TournamentStatus {
+  IN_PROGRESS
+  ELIMINATED
+  CHAMPION
+}
+
+enum TournamentStage {
+  QUARTERFINAL
+  SEMIFINAL
+  FINAL
+}
+
+model User {
+  id               String         @id @default(uuid())
+  nickname         String         @unique
+  email            String         @unique
+  passwordHash     String
+  refreshTokenHash String?
+  avatarUrl        String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  draftSessions    DraftSession[]
+  savedSquads      SavedSquad[]
+}
+
+model Player {
+  id              String       @id @default(uuid())
+  fullName        String       @unique
+  nation          String
+  club            String
+  league          String
+  primaryPosition String
+  imageUrl        String?
+  imageSource     String?
+  createdAt       DateTime     @default(now())
+  cards           PlayerCard[]
+}
+
+model PlayerCard {
+  id           String        @id @default(uuid())
+  playerId     String
+  overall      Int
+  pace         Int
+  shooting     Int
+  passing      Int
+  dribbling    Int
+  defending    Int
+  physical     Int
+  basePosition String
+  rarity       String        @default("gold")
+  createdAt    DateTime      @default(now())
+  player       Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  draftOptions DraftOption[]
+  draftPicks   DraftPick[]
+
+  @@unique([playerId, rarity, overall, basePosition])
+  @@index([overall])
+  @@index([basePosition])
+}
+
+model DraftSession {
+  id                  String             @id @default(uuid())
+  userId              String
+  formation           String             @default("4-3-3")
+  seed                String
+  status              DraftSessionStatus @default(IN_PROGRESS)
+  currentSlot         Int                @default(1)
+  totalSlots          Int                @default(18)
+  goalkeepersRequired Int                @default(2)
+  startedAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  completedAt         DateTime?
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  options             DraftOption[]
+  picks               DraftPick[]
+  tournament          Tournament?
+  savedSquads         SavedSquad[]
+
+  @@index([userId, status])
+}
+
+model SavedSquad {
+  id        String       @id @default(uuid())
+  userId    String
+  sessionId String
+  name      String
+  formation String
+  rating    Int
+  chemistry Int
+  snapshot  Json
+  createdAt DateTime     @default(now())
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session   DraftSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sessionId])
+  @@index([userId, createdAt])
+}
+
+model DraftOption {
+  id             String       @id @default(uuid())
+  sessionId      String
+  slotNo         Int
+  optionIndex    Int
+  playerCardId   String
+  chemistryBoost Int          @default(0)
+  createdAt      DateTime     @default(now())
+  session        DraftSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  playerCard     PlayerCard   @relation(fields: [playerCardId], references: [id], onDelete: Restrict)
+
+  @@unique([sessionId, slotNo, optionIndex])
+  @@index([sessionId, slotNo])
+}
+
+model DraftPick {
+  id           String       @id @default(uuid())
+  sessionId    String
+  slotNo       Int
+  playerCardId String
+  pickedAt     DateTime     @default(now())
+  session      DraftSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  playerCard   PlayerCard   @relation(fields: [playerCardId], references: [id], onDelete: Restrict)
+
+  @@unique([sessionId, slotNo])
+  @@index([sessionId, pickedAt])
+}
+
+model Tournament {
+  id           String           @id @default(uuid())
+  sessionId    String           @unique
+  status       TournamentStatus @default(IN_PROGRESS)
+  userTeamName String           @default("User Squad")
+  championTeam String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  completedAt  DateTime?
+  session      DraftSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  matches      TournamentMatch[]
+}
+
+model TournamentMatch {
+  id                 String          @id @default(uuid())
+  tournamentId       String
+  stage              TournamentStage
+  bracketIndex       Int
+  homeTeamName       String
+  awayTeamName       String
+  homeStrength       Int
+  awayStrength       Int
+  homeChemistry      Int
+  awayChemistry      Int
+  homeScore          Int
+  awayScore          Int
+  winnerTeamName     String
+  isUserMatch        Boolean         @default(false)
+  wentToPenalties    Boolean         @default(false)
+  simulationProvider String          @default("local")
+  simulationReason   String?
+  playedAt           DateTime        @default(now())
+  tournament         Tournament      @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, stage, bracketIndex])
+  @@index([tournamentId, stage])
+}

@@ -1,0 +1,30 @@
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: fut-draft-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: fut-draft-grafana
+    depends_on:
+      - prometheus
+    ports:
+      - "3002:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+
+volumes:
+  grafana-data:
+  prometheus-data:

@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  nickname      String         @unique
+  email         String?        @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  draftSessions DraftSession[]
+}
+
+model Player {
+  id              String       @id @default(uuid())
+  fullName        String       @unique
+  nation          String
+  club            String
+  primaryPosition String
+  createdAt       DateTime     @default(now())
+  cards           PlayerCard[]
+}
+
+model PlayerCard {
+  id           String        @id @default(uuid())
+  playerId     String
+  overall      Int
+  pace         Int
+  shooting     Int
+  passing      Int
+  dribbling    Int
+  defending    Int
+  physical     Int
+  basePosition String
+  rarity       String        @default("gold")
+  createdAt    DateTime      @default(now())
+  draftOptions DraftOption[]
+  draftPicks   DraftPick[]
+  player       Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, rarity, overall, basePosition])
+  @@index([overall])
+  @@index([basePosition])
+}
+
+model DraftSession {
+  id          String             @id @default(uuid())
+  userId      String
+  formation   String             @default("4-3-3")
+  seed        String
+  status      DraftSessionStatus @default(IN_PROGRESS)
+  currentSlot Int                @default(1)
+  totalSlots  Int                @default(11)
+  startedAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  completedAt DateTime?
+  options     DraftOption[]
+  picks       DraftPick[]
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+}
+
+model DraftOption {
+  id             String       @id @default(uuid())
+  sessionId      String
+  slotNo         Int
+  optionIndex    Int
+  playerCardId   String
+  chemistryBoost Int          @default(0)
+  createdAt      DateTime     @default(now())
+  playerCard     PlayerCard   @relation(fields: [playerCardId], references: [id])
+  session        DraftSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, slotNo, optionIndex])
+  @@index([sessionId, slotNo])
+}
+
+model DraftPick {
+  id           String       @id @default(uuid())
+  sessionId    String
+  slotNo       Int
+  playerCardId String
+  pickedAt     DateTime     @default(now())
+  playerCard   PlayerCard   @relation(fields: [playerCardId], references: [id])
+  session      DraftSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, slotNo])
+  @@index([sessionId, pickedAt])
+}
+
+enum DraftSessionStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+

@@ -1,0 +1,47 @@
+groups:
+  - name: fut-draft-alerts
+    rules:
+      - alert: FutDraftBackendDown
+        expr: up{job="fut-draft-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Fut Draft backend is down"
+          description: "Prometheus cannot scrape the backend /api/metrics endpoint."
+
+      - alert: FutDraftHighServerErrors
+        expr: sum(rate(futdraft_http_errors_total{status=~"5.."}[5m])) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High backend 5xx error rate"
+          description: "The backend is returning too many server errors. Client 4xx responses are not counted here."
+
+      - alert: FutDraftHighClientErrors
+        expr: sum(rate(futdraft_http_errors_total{status=~"4.."}[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High backend 4xx response rate"
+          description: "The app receives many client-side errors such as 400/401/404/409. This can happen during invalid forms, expired auth, or repeated blocked actions."
+
+      - alert: FutDraftHighP95Latency
+        expr: histogram_quantile(0.95, sum(rate(futdraft_http_request_duration_seconds_bucket[5m])) by (le)) > 1
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High backend p95 latency"
+          description: "95th percentile HTTP latency is above 1 second."
+
+      - alert: FutDraftAiSimulationFallbacks
+        expr: sum(rate(futdraft_match_simulations_total{status="fallback"}[10m])) > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "AI match simulation fallback is used"
+          description: "OpenRouter simulation failed or timed out for a user match, so local simulation was used. AI is intentionally used only for matches involving the user's squad; bot-vs-bot matches are simulated locally."
